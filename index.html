@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Dashboard</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --card: #1a1d2e;
+  --border: #2a2d3e;
+  --text: #e0e0e0;
+  --text-dim: #8888a0;
+  --accent: #6366f1;
+  --green: #22c55e;
+  --red: #ef4444;
+  --blue: #3b82f6;
+  --orange: #f59e0b;
+  --cyan: #06b6d4;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; padding:16px; }
+h1 { font-size:1.6rem; margin-bottom:4px; }
+.subtitle { color:var(--text-dim); font-size:0.85rem; margin-bottom:20px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:20px; }
+.card h2 { font-size:1.1rem; margin-bottom:12px; color:var(--accent); }
+.period-btns { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.period-btns button { background:var(--border); color:var(--text); border:none; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:0.8rem; }
+.period-btns button.active { background:var(--accent); color:#fff; }
+.ticker-grid { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:10px; }
+.ticker-btn { background:var(--border); color:var(--text-dim); border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.7rem; font-weight:600; transition:all 0.15s; }
+.ticker-btn.active { background:var(--accent); color:#fff; }
+.ticker-btn:hover { background:#3a3d5e; }
+.ticker-btn.highlight { background:var(--orange); color:#000; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+@media(max-width:900px) { .grid-2 { grid-template-columns:1fr; } }
+.contrib-list { list-style:none; }
+.contrib-list li { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.85rem; cursor:pointer; }
+.contrib-list li:hover { background: rgba(99,102,241,0.1); }
+.contrib-list .ticker { font-weight:700; }
+.pos { color:var(--green); }
+.neg { color:var(--red); }
+.growth-table { width:100%; border-collapse:collapse; font-size:0.75rem; overflow-x:auto; display:block; }
+.growth-table th,.growth-table td { padding:5px 7px; text-align:right; border-bottom:1px solid var(--border); white-space:nowrap; }
+.growth-table th { color:var(--text-dim); font-weight:600; text-align:right; }
+.growth-table th:first-child,.growth-table td:first-child { text-align:left; position:sticky; left:0; background:var(--card); }
+.growth-table tr:hover { background: rgba(99,102,241,0.15); }
+.accel { color: var(--green); font-size: 0.65rem; }
+.decel { color: var(--red); font-size: 0.65rem; }
+.stats-row { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+.stat-box { background:var(--border); border-radius:8px; padding:12px 18px; min-width:140px; }
+.stat-box .label { font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; }
+.stat-box .value { font-size:1.3rem; font-weight:700; margin-top:2px; }
+#loading { text-align:center; padding:60px; font-size:1.2rem; color:var(--text-dim); }
+.filter-banner { display:none; background:var(--orange); color:#000; padding:8px 16px; border-radius:8px; margin-bottom:16px; font-weight:700; font-size:0.9rem; cursor:pointer; }
+.filter-banner.active { display:flex; justify-content:space-between; align-items:center; }
+</style>
+</head>
+<body>
+<h1>📊 Portfolio Dashboard</h1>
+<p class="subtitle" id="genTime">Loading data...</p>
+
+<div class="filter-banner" id="filterBanner" onclick="clearFilter()">
+  <span id="filterLabel">Filtering: AAPL</span>
+  <span>✕ Clear</span>
+</div>
+
+<div id="loading">Loading dashboard data...</div>
+<div id="app" style="display:none">
+
+<!-- Portfolio Performance Chart -->
+<div class="card">
+  <h2>📈 Portfolio Performance</h2>
+  <div class="period-btns" id="periodBtns"></div>
+  <div class="ticker-grid" id="tickerGrid"></div>
+  <div id="perfChart"></div>
+</div>
+
+<!-- Portfolio vs S&P 500 -->
+<div class="card">
+  <h2>📊 Portfolio vs S&P 500</h2>
+  <div class="period-btns" id="vsSPBtns"></div>
+  <div id="vsSPChart"></div>
+</div>
+
+<!-- Top 10 / Bottom 10 Performance -->
+<div class="card">
+  <h2>🏆 Top 10 / Bottom 10 Performance</h2>
+  <div class="period-btns" id="topBotBtns"></div>
+  <div id="topBotChart"></div>
+</div>
+
+<!-- Contributors -->
+<div class="card">
+  <h2>🚀 Top Contributors / 📉 Bottom Detractors</h2>
+  <div class="period-btns" id="contribBtns"></div>
+  <div class="grid-2">
+    <div>
+      <h2 style="font-size:0.95rem">🚀 Top 10</h2>
+      <ul class="contrib-list" id="topList"></ul>
+    </div>
+    <div>
+      <h2 style="font-size:0.95rem">📉 Bottom 10</h2>
+      <ul class="contrib-list" id="bottomList"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- Volume vs Average Volume -->
+<div class="card">
+  <h2>📊 Volume vs 20-Day Average Volume</h2>
+  <div id="volumeChart"></div>
+</div>
+
+<!-- Drawdown -->
+<div class="card">
+  <h2>🌊 Drawdown Profile</h2>
+  <div class="period-btns" id="ddBtns"></div>
+  <div id="drawdownChart"></div>
+</div>
+
+<!-- Earnings Growth Bar Chart -->
+<div class="card">
+  <h2>💰 Earnings Growth: Current vs Forward</h2>
+  <div id="earningsGrowthChart"></div>
+</div>
+
+<!-- Growth Metrics Table -->
+<div class="card">
+  <h2>📋 Growth Metrics (with Acceleration)</h2>
+  <table class="growth-table" id="growthTable"></table>
+</div>
+
+<!-- Interactive Ticker Tunnels -->
+<div class="card" id="tunnelSection" style="display:none">
+  <h2>🔍 Interactive Ticker Tunnels</h2>
+  <p style="color:var(--text-dim);font-size:0.8rem;margin-bottom:8px;">Double-click any ticker button above to filter the entire dashboard.</p>
+</div>
+
+<!-- Earnings Calendar (at bottom) -->
+<div class="card">
+  <h2>📅 Earnings Calendar</h2>
+  <div id="earningsChart"></div>
+</div>
+
+</div>
+
+<script>
+let DATA = null;
+let currentPeriod = '1Y';
+let activeOverlays = new Set();
+let filterTicker = null;
+
+// Per-section periods
+let vsSPPeriod = '1Y';
+let topBotPeriod = '1Y';
+let contribPeriod = '1Y';
+let ddPeriod = '5Y';
+
+const PERIODS = ['1W','1M','6M','YTD','1Y','3Y','5Y'];
+const COLORS = ['#6366f1','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899','#8b5cf6','#f97316','#14b8a6','#e11d48',
+  '#a855f7','#84cc16','#0ea5e9','#f43f5e','#10b981','#fbbf24','#7c3aed','#fb923c','#2dd4bf','#be123c',
+  '#c084fc','#65a30d','#0284c7','#e11d48','#059669','#d97706','#6d28d9','#ea580c','#0d9488','#9f1239',
+  '#a78bfa','#4ade80','#38bdf8','#fb7185','#34d399','#facc15','#8b5cf6','#f97316','#2dd4bf','#f43f5e'];
+
+const BASE_LAYOUT = {
+  paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+  font: { color: '#e0e0e0' },
+  hoverlabel: { bgcolor: '#ffffff', font: { color: '#000000', size: 13, family: 'Arial Black, sans-serif' }, bordercolor: '#333' },
+};
+
+function plotLayout(extra) { return Object.assign({}, BASE_LAYOUT, extra); }
+
+function makePeriodBtns(containerId, activePeriod, callback) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = PERIODS.map(p => `<button class="${p===activePeriod?'active':''}" onclick="${callback}('${p}')">${p}</button>`).join('');
+}
+
+async function loadData() {
+  try {
+    const r = await fetch('dashboard_data.json?_=' + Date.now());
+    DATA = await r.json();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    document.getElementById('genTime').textContent = `Data as of: ${new Date(DATA.generated).toLocaleString()}`;
+    render();
+  } catch(e) {
+    console.error('Dashboard error:', e);
+    document.getElementById('loading').innerHTML = `<span style="color:var(--red)">Error: ${e.message}<br><br>Stack: ${e.stack}</span>`;
+  }
+}
+
+function getDateRange(period) {
+  const dates = DATA.dates;
+  const last = new Date(dates[dates.length-1]);
+  let start;
+  if (period === '1W') { start = new Date(last); start.setDate(start.getDate()-7); }
+  else if (period === '1M') { start = new Date(last); start.setMonth(start.getMonth()-1); }
+  else if (period === 'YTD') start = new Date(last.getFullYear(), 0, 1);
+  else if (period === '6M') { start = new Date(last); start.setMonth(start.getMonth()-6); }
+  else if (period === '1Y') { start = new Date(last); start.setFullYear(start.getFullYear()-1); }
+  else if (period === '3Y') { start = new Date(last); start.setFullYear(start.getFullYear()-3); }
+  else { start = new Date(last); start.setFullYear(start.getFullYear()-5); }
+  const startStr = start.toISOString().slice(0,10);
+  const si = dates.findIndex(d => d >= startStr);
+  return Math.max(si, 0);
+}
+
+function getReturnsForPeriod(period) {
+  // Compute returns from price data for any period
+  const si = getDateRange(period);
+  const tickers = DATA.tickers;
+  const result = {};
+  for (const t of [...tickers, 'SPY']) {
+    const prices = DATA.prices[t];
+    if (!prices || !prices[si] || prices[si] === 0) { result[t] = 0; continue; }
+    const base = prices[si];
+    const last = prices[prices.length - 1];
+    if (base && last) result[t] = (last - base) / base;
+    else result[t] = 0;
+  }
+  return result;
+}
+
+function setFilter(t) {
+  filterTicker = t;
+  document.getElementById('filterBanner').className = 'filter-banner active';
+  document.getElementById('filterLabel').textContent = `Filtering: ${t} — ${DATA.stockInfo[t]?.name || t}`;
+  if (!activeOverlays.has(t)) activeOverlays.add(t);
+  render();
+}
+
+function clearFilter() {
+  filterTicker = null;
+  document.getElementById('filterBanner').className = 'filter-banner';
+  render();
+}
+
+function render() {
+  makePeriodBtns('periodBtns', currentPeriod, 'setPeriod');
+  renderTickerGrid();
+  renderPerfChart();
+  makePeriodBtns('vsSPBtns', vsSPPeriod, 'setVsSPPeriod');
+  renderVsSPChart();
+  makePeriodBtns('topBotBtns', topBotPeriod, 'setTopBotPeriod');
+  renderTopBotChart();
+  makePeriodBtns('contribBtns', contribPeriod, 'setContribPeriod');
+  renderContributors();
+  renderVolumeChart();
+  makePeriodBtns('ddBtns', ddPeriod, 'setDDPeriod');
+  renderDrawdown();
+  renderEarningsGrowthChart();
+  renderGrowthTable();
+  renderEarnings();
+}
+
+function setPeriod(p) { currentPeriod = p; makePeriodBtns('periodBtns', currentPeriod, 'setPeriod'); renderPerfChart(); }
+function setVsSPPeriod(p) { vsSPPeriod = p; makePeriodBtns('vsSPBtns', vsSPPeriod, 'setVsSPPeriod'); renderVsSPChart(); }
+function setTopBotPeriod(p) { topBotPeriod = p; makePeriodBtns('topBotBtns', topBotPeriod, 'setTopBotPeriod'); renderTopBotChart(); }
+function setContribPeriod(p) { contribPeriod = p; makePeriodBtns('contribBtns', contribPeriod, 'setContribPeriod'); renderContributors(); }
+function setDDPeriod(p) { ddPeriod = p; makePeriodBtns('ddBtns', ddPeriod, 'setDDPeriod'); renderDrawdown(); }
+
+function renderTickerGrid() {
+  const c = document.getElementById('tickerGrid');
+  c.innerHTML = DATA.tickers.map(t => {
+    let cls = 'ticker-btn';
+    if (activeOverlays.has(t)) cls += ' active';
+    if (filterTicker === t) cls += ' highlight';
+    return `<button class="${cls}" onclick="toggleTicker('${t}')" ondblclick="setFilter('${t}')">${t}</button>`;
+  }).join('');
+}
+
+function toggleTicker(t) {
+  if (activeOverlays.has(t)) activeOverlays.delete(t); else activeOverlays.add(t);
+  renderTickerGrid();
+  renderPerfChart();
+}
+
+function renderPerfChart() {
+  const si = getDateRange(currentPeriod);
+  const dates = DATA.dates.slice(si);
+  const tickers = DATA.tickers;
+  const n = dates.length;
+  const portfolioLine = new Array(n).fill(0);
+  let count = 0;
+  for (const t of tickers) {
+    const prices = DATA.prices[t]?.slice(si);
+    if (!prices || !prices[0]) continue;
+    const base = prices[0];
+    for (let i = 0; i < n; i++) {
+      if (prices[i] != null) portfolioLine[i] += (prices[i] / base - 1) * 100;
+    }
+    count++;
+  }
+  for (let i = 0; i < n; i++) portfolioLine[i] = +(portfolioLine[i] / count).toFixed(2);
+
+  const traces = [{
+    x: dates, y: portfolioLine, name: 'Portfolio (EW)',
+    line: { color: '#ef4444', width: 3 }, type: 'scatter'
+  }];
+
+  let ci = 0;
+  for (const t of activeOverlays) {
+    const prices = DATA.prices[t]?.slice(si);
+    if (!prices || !prices[0]) continue;
+    const base = prices[0];
+    const line = prices.map(p => p != null ? +((p/base-1)*100).toFixed(2) : null);
+    traces.push({
+      x: dates, y: line, name: t,
+      line: { color: COLORS[(ci+1) % COLORS.length], width: 2 }, type: 'scatter'
+    });
+    ci++;
+  }
+
+  Plotly.newPlot('perfChart', traces, plotLayout({
+    xaxis: { gridcolor: '#2a2d3e', linecolor: '#2a2d3e' },
+    yaxis: { gridcolor: '#2a2d3e', linecolor: '#2a2d3e', title: 'Return %', ticksuffix: '%' },
+    legend: { orientation: 'h', y: -0.15 },
+    margin: { t: 10, r: 20 },
+    hovermode: 'x unified'
+  }), { responsive: true });
+}
+
+function renderVsSPChart() {
+  const si = getDateRange(vsSPPeriod);
+  const dates = DATA.dates.slice(si);
+  const n = dates.length;
+  
+  // Portfolio EW line
+  const portLine = new Array(n).fill(0);
+  let count = 0;
+  for (const t of DATA.tickers) {
+    const prices = DATA.prices[t]?.slice(si);
+    if (!prices || !prices[0]) continue;
+    const base = prices[0];
+    for (let i = 0; i < n; i++) {
+      if (prices[i] != null) portLine[i] += (prices[i] / base - 1) * 100;
+    }
+    count++;
+  }
+  for (let i = 0; i < n; i++) portLine[i] = +(portLine[i] / count).toFixed(2);
+
+  // SPY line
+  const spyPrices = DATA.prices['SPY']?.slice(si);
+  let spyLine = [];
+  if (spyPrices && spyPrices[0]) {
+    const base = spyPrices[0];
+    spyLine = spyPrices.map(p => p != null ? +((p/base-1)*100).toFixed(2) : null);
+  }
+
+  Plotly.newPlot('vsSPChart', [
+    { x: dates, y: portLine, name: 'Portfolio (EW)', line: { color: '#ef4444', width: 3 }, type: 'scatter' },
+    { x: dates, y: spyLine, name: 'S&P 500 (SPY)', line: { color: '#3b82f6', width: 3 }, type: 'scatter' },
+  ], plotLayout({
+    xaxis: { gridcolor: '#2a2d3e' },
+    yaxis: { gridcolor: '#2a2d3e', title: 'Return %', ticksuffix: '%' },
+    legend: { orientation: 'h', y: -0.15 },
+    margin: { t: 10, r: 20 },
+    hovermode: 'x unified',
+    height: 400,
+  }), { responsive: true });
+}
+
+function renderTopBotChart() {
+  const returns = getReturnsForPeriod(topBotPeriod);
+  const sorted = DATA.tickers.map(t => ({ t, r: returns[t] || 0 })).sort((a,b) => b.r - a.r);
+  const top10 = sorted.slice(0, 10);
+  const bot10 = sorted.slice(-10).reverse();
+  const items = [...top10, ...bot10.reverse()];
+
+  Plotly.newPlot('topBotChart', [{
+    y: items.map(i => i.t),
+    x: items.map(i => +(i.r * 100).toFixed(1)),
+    type: 'bar',
+    orientation: 'h',
+    marker: { color: items.map(i => i.r >= 0 ? '#22c55e' : '#ef4444') },
+    hovertemplate: '<b>%{y}</b>: %{x:.1f}%<extra></extra>'
+  }], plotLayout({
+    xaxis: { gridcolor: '#2a2d3e', title: 'Return %', ticksuffix: '%' },
+    yaxis: { gridcolor: '#2a2d3e', autorange: 'reversed' },
+    margin: { t: 10, l: 60, r: 20 },
+    height: 550,
+  }), { responsive: true });
+}
+
+function renderContributors() {
+  const returns = getReturnsForPeriod(contribPeriod);
+  const sorted = DATA.tickers.map(t => ({ t, r: returns[t] || 0 })).sort((a,b) => b.r - a.r);
+  const top10 = sorted.slice(0, 10);
+  const bot10 = sorted.slice(-10).reverse();
+  
+  const renderList = (items, el) => {
+    el.innerHTML = items.map(i => {
+      const hl = filterTicker === i.t ? ' style="background:rgba(245,158,11,0.2)"' : '';
+      return `<li${hl} onclick="setFilter('${i.t}')"><span class="ticker">${i.t}</span><span class="${i.r>=0?'pos':'neg'}">${(i.r*100).toFixed(1)}%</span></li>`;
+    }).join('');
+  };
+  renderList(top10, document.getElementById('topList'));
+  renderList(bot10, document.getElementById('bottomList'));
+}
+
+function renderVolumeChart() {
+  const vd = DATA.volumeData || {};
+  const tickers = DATA.tickers.slice().sort((a,b) => (vd[b]?.ratio || 1) - (vd[a]?.ratio || 1));
+
+  Plotly.newPlot('volumeChart', [
+    {
+      x: tickers, y: tickers.map(t => vd[t]?.current || 0), name: 'Current Volume',
+      type: 'bar', marker: { color: tickers.map(t => (vd[t]?.ratio || 1) > 1.5 ? '#f59e0b' : (vd[t]?.ratio || 1) < 0.5 ? '#ef4444' : '#3b82f6') },
+      hovertemplate: '<b>%{x}</b><br>Current: %{y:,.0f}<extra></extra>'
+    },
+    {
+      x: tickers, y: tickers.map(t => vd[t]?.avg20 || 0), name: '20-Day Avg',
+      type: 'bar', marker: { color: 'rgba(99,102,241,0.4)' },
+      hovertemplate: '<b>%{x}</b><br>20D Avg: %{y:,.0f}<extra></extra>'
+    }
+  ], plotLayout({
+    barmode: 'group',
+    xaxis: { tickangle: -45, gridcolor: '#2a2d3e' },
+    yaxis: { gridcolor: '#2a2d3e', title: 'Volume' },
+    margin: { t: 10, b: 80 },
+    height: 400,
+    legend: { orientation: 'h', y: -0.25 },
+  }), { responsive: true });
+}
+
+function renderDrawdown() {
+  const si = getDateRange(ddPeriod);
+  const dates = DATA.drawdownDates?.slice(si) || [];
+  const dd = DATA.drawdownValues?.slice(si) || [];
+  
+  const traces = [{
+    x: dates, y: dd.map(v => v * 100), name: 'Portfolio',
+    fill: 'tozeroy', fillcolor: 'rgba(239,68,68,0.3)',
+    line: { color: '#ef4444', width: 2 }, type: 'scatter'
+  }];
+
+  if (filterTicker && DATA.stockDrawdowns && DATA.stockDrawdowns[filterTicker]) {
+    traces.push({
+      x: DATA.dates.slice(si), y: DATA.stockDrawdowns[filterTicker].slice(si).map(v => v * 100),
+      name: filterTicker,
+      line: { color: '#f59e0b', width: 2 }, type: 'scatter'
+    });
+  }
+
+  Plotly.newPlot('drawdownChart', traces, plotLayout({
+    xaxis: { gridcolor: '#2a2d3e' },
+    yaxis: { gridcolor: '#2a2d3e', title: 'Drawdown %', ticksuffix: '%' },
+    margin: { t: 10, r: 10 },
+    height: 300,
+    legend: { orientation: 'h', y: -0.2 },
+  }), { responsive: true });
+}
+
+function renderEarningsGrowthChart() {
+  const tickers = DATA.tickers;
+  const currentGrowth = tickers.map(t => {
+    const eg = DATA.stockInfo[t]?.earningsGrowth;
+    return eg != null ? +(eg * 100).toFixed(1) : 0;
+  });
+  const forwardGrowth = tickers.map(t => {
+    const fg = DATA.stockInfo[t]?.forwardEarningsGrowth;
+    return fg != null ? +(fg * 100).toFixed(1) : 0;
+  });
+
+  Plotly.newPlot('earningsGrowthChart', [
+    { x: tickers, y: currentGrowth, name: 'Current Year Earnings Growth', type: 'bar', marker: { color: '#6366f1' },
+      hovertemplate: '<b>%{x}</b>: %{y:.1f}%<extra></extra>' },
+    { x: tickers, y: forwardGrowth, name: 'Forward Earnings Growth', type: 'bar', marker: { color: '#06b6d4' },
+      hovertemplate: '<b>%{x}</b>: %{y:.1f}%<extra></extra>' },
+  ], plotLayout({
+    barmode: 'group',
+    xaxis: { tickangle: -45, gridcolor: '#2a2d3e' },
+    yaxis: { gridcolor: '#2a2d3e', title: 'Growth %', ticksuffix: '%' },
+    margin: { t: 10, b: 80 },
+    height: 400,
+    legend: { orientation: 'h', y: -0.25 },
+  }), { responsive: true });
+}
+
+function renderGrowthTable() {
+  const fmt = (v, compareV) => {
+    if (v == null) return '<td>—</td>';
+    const pct = (v * 100).toFixed(1);
+    const cls = v >= 0 ? 'pos' : 'neg';
+    let accel = '';
+    if (compareV != null) {
+      const diff = v - compareV;
+      const diffPct = (diff * 100).toFixed(1);
+      if (diff > 0.001) accel = `<br><span class="accel">▲ +${diffPct}% accel</span>`;
+      else if (diff < -0.001) accel = `<br><span class="decel">▼ ${diffPct}% decel</span>`;
+      else accel = `<br><span style="color:var(--text-dim);font-size:0.65rem">● flat</span>`;
+    }
+    return `<td><span class="${cls}">${pct}%</span>${accel}</td>`;
+  };
+
+  const fmtMargin = (current, yoyChange, priorYoYChange) => {
+    if (current == null) return '<td>—</td>';
+    const pct = (current * 100).toFixed(1);
+    let yoyStr = '';
+    if (yoyChange != null) {
+      const yoyPct = (yoyChange * 100).toFixed(1);
+      const yoyCls = yoyChange >= 0 ? 'pos' : 'neg';
+      const sign = yoyChange >= 0 ? '+' : '';
+      yoyStr = `<br><span class="${yoyCls}" style="font-size:0.65rem">${sign}${yoyPct}pp YoY</span>`;
+      if (priorYoYChange != null) {
+        const diff = yoyChange - priorYoYChange;
+        if (diff > 0.001) yoyStr += `<br><span class="accel">▲ accel</span>`;
+        else if (diff < -0.001) yoyStr += `<br><span class="decel">▼ decel</span>`;
+        else yoyStr += `<br><span style="color:var(--text-dim);font-size:0.65rem">● flat</span>`;
+      }
+    }
+    return `<td>${pct}%${yoyStr}</td>`;
+  };
+
+  let html = `<thead><tr><th>Ticker</th><th>Revenue Growth YoY</th><th>Earnings Growth YoY</th><th>FCF Growth YoY</th><th>Gross Margins</th></tr></thead><tbody>`;
+  for (const t of DATA.tickers) {
+    const s = DATA.stockInfo[t] || {};
+    const revGrowth = s.revenueGrowth;
+    const revGrowthPrior = s.revenueGrowthPrior;
+    const earningsGrowth = s.earningsGrowth;
+    const eqg = s.earningsQuarterlyGrowth;
+    const fcfGrowth = s.fcfGrowth;
+    const fcfGrowthPrior = s.fcfGrowthPrior;
+    const grossMargins = s.grossMargins;
+    const grossMarginYoY = s.grossMarginYoY;
+    const grossMarginPriorYoY = s.grossMarginPriorYoY;
+    
+    html += `<tr onclick="setFilter('${t}')" style="cursor:pointer">`;
+    html += `<td><strong>${t}</strong></td>`;
+    html += fmt(revGrowth, revGrowthPrior);
+    html += fmt(earningsGrowth, eqg);
+    html += fmt(fcfGrowth, fcfGrowthPrior);
+    html += fmtMargin(grossMargins, grossMarginYoY, grossMarginPriorYoY);
+    html += `</tr>`;
+  }
+  html += '</tbody>';
+  document.getElementById('growthTable').innerHTML = html;
+}
+
+function renderEarnings() {
+  const cal = DATA.earningsCalendar || {};
+  const today = new Date();
+  const twoWeeks = new Date(today.getTime() + 14 * 86400000);
+  
+  const items = [];
+  for (const t of DATA.tickers) {
+    const dates = cal[t] || [];
+    for (const d of dates) {
+      const dt = new Date(d);
+      if (!isNaN(dt.getTime())) {
+        items.push({ t, date: dt, dateStr: d, soon: dt <= twoWeeks && dt >= today });
+      }
+    }
+  }
+  items.sort((a, b) => a.date - b.date);
+
+  if (!items.length) {
+    document.getElementById('earningsChart').innerHTML = '<p style="color:var(--text-dim)">No earnings dates available</p>';
+    return;
+  }
+
+  Plotly.newPlot('earningsChart', [{
+    x: items.map(i => i.dateStr),
+    y: items.map(i => i.t),
+    mode: 'markers+text',
+    text: items.map(i => i.t),
+    textposition: 'right',
+    textfont: { size: 10, color: '#e0e0e0' },
+    marker: { size: items.map(i => i.soon ? 16 : 10), color: items.map(i => i.soon ? '#ef4444' : '#3b82f6'), symbol: items.map(i => i.soon ? 'star' : 'circle') },
+    hovertemplate: '<b>%{y}</b><br>%{x}<extra></extra>',
+    type: 'scatter'
+  }], plotLayout({
+    xaxis: { title: 'Date', gridcolor: '#2a2d3e', type: 'date' },
+    yaxis: { gridcolor: '#2a2d3e', autorange: 'reversed' },
+    margin: { t: 10, l: 60, b: 40 },
+    height: Math.max(300, items.length * 18),
+    annotations: [{ x: 0.01, y: 1.05, xref: 'paper', yref: 'paper', text: '⭐ = within 2 weeks', showarrow: false, font: { color: '#ef4444', size: 11 } }]
+  }), { responsive: true });
+}
+
+loadData();
+</script>
+</body>
+</html>
