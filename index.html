@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio Dashboard</title>
+<title>Model One Portfolio</title>
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <style>
 :root {
@@ -53,13 +53,35 @@ h1 { font-size:1.6rem; margin-bottom:4px; }
 .stat-box .label { font-size:0.7rem; color:var(--text-dim); text-transform:uppercase; }
 .stat-box .value { font-size:1.3rem; font-weight:700; margin-top:2px; }
 #loading { text-align:center; padding:60px; font-size:1.2rem; color:var(--text-dim); }
+/* Sector Grid */
+.sg-table { display:flex; gap:0; border:1px solid var(--border); border-radius:8px; overflow:hidden; min-width:max-content; }
+.sg-col { min-width:110px; border-right:1px solid var(--border); display:flex; flex-direction:column; }
+.sg-col:last-child { border-right:none; }
+.sg-header { background:rgba(99,102,241,0.18); color:var(--accent); font-weight:700; font-size:0.7rem; padding:8px 6px; text-align:center; white-space:nowrap; cursor:default; }
+.sg-stock { padding:3px 6px; font-size:0.78rem; cursor:grab; text-align:center; user-select:none; transition:background 0.1s; }
+.sg-stock:hover { background:rgba(255,255,255,0.06); }
+.sg-stock.in-model { color:#fff; font-weight:700; }
+.sg-stock.watchlist { color:var(--cyan); font-weight:400; }
+.sg-stock.drag-over { border-top:2px solid var(--accent); }
+.sg-add { text-align:center; padding:3px; cursor:pointer; color:var(--text-dim); font-size:0.75rem; }
+.sg-add:hover { color:var(--accent); }
 .filter-banner { display:none; background:var(--orange); color:#000; padding:8px 16px; border-radius:8px; margin-bottom:16px; font-weight:700; font-size:0.9rem; cursor:pointer; }
 .filter-banner.active { display:flex; justify-content:space-between; align-items:center; }
 </style>
 </head>
 <body>
-<h1>📊 Portfolio Dashboard</h1>
+<h1>📊 Model One Portfolio</h1>
 <p class="subtitle" id="genTime">Loading data...</p>
+
+<!-- Sector/Stock Grid -->
+<div class="card" id="sectorGridCard">
+  <h2>🗂️ Sector / Stock Grid</h2>
+  <div id="sectorGrid" style="overflow-x:auto;"></div>
+  <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+    <button id="addSectorBtn" style="background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.8rem;">+ Add Sector</button>
+    <span style="color:var(--text-dim);font-size:0.75rem;margin-left:auto;">Names in <b style="color:#fff;">bold</b> are in model &nbsp;|&nbsp; Click = toggle model/watchlist &nbsp;|&nbsp; Drag to move &nbsp;|&nbsp; Right-click = delete</span>
+  </div>
+</div>
 
 <div class="filter-banner" id="filterBanner" onclick="clearFilter()">
   <span id="filterLabel">Filtering: AAPL</span>
@@ -579,6 +601,108 @@ function renderEarnings() {
     annotations: [{ x: 0.01, y: 1.05, xref: 'paper', yref: 'paper', text: '⭐ = within 2 weeks', showarrow: false, font: { color: '#ef4444', size: 11 } }]
   }), { responsive: true });
 }
+
+// ---- Sector Grid ----
+const DEFAULT_GRID = [
+  {name:"AI Chips/Semis",stocks:[{t:"MU",m:1},{t:"NVDA",m:1},{t:"MPWR",m:1},{t:"AVGO",m:0}]},
+  {name:"Cybersecurity/AI Security",stocks:[{t:"PANW",m:1},{t:"NET",m:0},{t:"CRWD",m:0}]},
+  {name:"Nuclear/AI Energy",stocks:[{t:"BWXT",m:1},{t:"GEV",m:0},{t:"LEU",m:0}]},
+  {name:"AI Data Center",stocks:[{t:"VRT",m:1},{t:"ANET",m:0},{t:"PSTG",m:0},{t:"MOD",m:0}]},
+  {name:"Cloud/AI Cloud",stocks:[{t:"GOOG",m:1},{t:"AMZN",m:1},{t:"MSFT",m:1},{t:"ORCL",m:0}]},
+  {name:"Defense",stocks:[{t:"CW",m:0},{t:"ITA",m:0}]},
+  {name:"Pharma/Healthcare",stocks:[{t:"TMDX",m:1},{t:"ISRG",m:1},{t:"DXCM",m:1},{t:"GH",m:0},{t:"LLY",m:0},{t:"XPH",m:0},{t:"XBI",m:0}]},
+  {name:"Rare Earths",stocks:[{t:"NB",m:0},{t:"USAR",m:0},{t:"AREC",m:0}]},
+  {name:"Software/SAAS",stocks:[{t:"SHOP",m:1},{t:"VEEV",m:1},{t:"MDB",m:1},{t:"PCOR",m:1},{t:"APPF",m:1},{t:"OKTA",m:1},{t:"NOW",m:1},{t:"DT",m:1},{t:"IOT",m:1},{t:"TYL",m:1},{t:"U",m:1},{t:"TWLO",m:1},{t:"TEAM",m:1},{t:"DOCU",m:1},{t:"CRM",m:1},{t:"WDAY",m:1}]},
+  {name:"Consumer",stocks:[{t:"SHAK",m:1},{t:"PLNT",m:1},{t:"ABNB",m:1}]},
+  {name:"Hardware Tech",stocks:[{t:"AXON",m:1},{t:"AAPL",m:1},{t:"SYM",m:1}]},
+  {name:"Crypto",stocks:[{t:"COIN",m:1}]},
+  {name:"Communication Services",stocks:[{t:"META",m:1},{t:"NFLX",m:1}]},
+  {name:"Financials",stocks:[{t:"PRAA",m:1}]},
+  {name:"Industrials",stocks:[{t:"XMTR",m:1},{t:"UBER",m:1}]},
+];
+
+function loadGrid() {
+  const saved = localStorage.getItem('sectorGrid');
+  if (saved) try { return JSON.parse(saved); } catch(e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_GRID));
+}
+function saveGrid(g) { localStorage.setItem('sectorGrid', JSON.stringify(g)); }
+
+let gridData = loadGrid();
+
+function renderSectorGrid() {
+  const container = document.getElementById('sectorGrid');
+  let html = '<div class="sg-table">';
+  gridData.forEach((sec, si) => {
+    html += `<div class="sg-col" data-si="${si}">`;
+    html += `<div class="sg-header">${sec.name}</div>`;
+    sec.stocks.forEach((s, sti) => {
+      const cls = s.m ? 'in-model' : 'watchlist';
+      html += `<div class="sg-stock ${cls}" draggable="true" data-si="${si}" data-sti="${sti}" onclick="toggleModel(${si},${sti})" oncontextmenu="deleteStock(event,${si},${sti})">${s.t}</div>`;
+    });
+    html += `<div class="sg-add" onclick="addStock(${si})">+</div>`;
+    html += '</div>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
+
+  // drag and drop
+  container.querySelectorAll('.sg-stock').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', JSON.stringify({si:+el.dataset.si,sti:+el.dataset.sti}));
+      e.dataTransfer.effectAllowed = 'move';
+    });
+  });
+  container.querySelectorAll('.sg-col').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      try {
+        const src = JSON.parse(e.dataTransfer.getData('text/plain'));
+        const destSi = +col.dataset.si;
+        const stock = gridData[src.si].stocks.splice(src.sti, 1)[0];
+        gridData[destSi].stocks.push(stock);
+        saveGrid(gridData);
+        renderSectorGrid();
+      } catch(ex) {}
+    });
+  });
+}
+
+function toggleModel(si, sti) {
+  gridData[si].stocks[sti].m = gridData[si].stocks[sti].m ? 0 : 1;
+  saveGrid(gridData);
+  renderSectorGrid();
+}
+
+function deleteStock(e, si, sti) {
+  e.preventDefault();
+  if (confirm(`Remove ${gridData[si].stocks[sti].t}?`)) {
+    gridData[si].stocks.splice(sti, 1);
+    saveGrid(gridData);
+    renderSectorGrid();
+  }
+}
+
+function addStock(si) {
+  const t = prompt('Enter ticker symbol:');
+  if (t && t.trim()) {
+    gridData[si].stocks.push({t: t.trim().toUpperCase(), m: 0});
+    saveGrid(gridData);
+    renderSectorGrid();
+  }
+}
+
+document.getElementById('addSectorBtn').addEventListener('click', () => {
+  const name = prompt('Enter sector name:');
+  if (name && name.trim()) {
+    gridData.push({name: name.trim(), stocks: []});
+    saveGrid(gridData);
+    renderSectorGrid();
+  }
+});
+
+renderSectorGrid();
 
 loadData();
 </script>
