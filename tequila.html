@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Additive-Free Tequila — Competitive Intelligence Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--card:#1a1d27;--card2:#222633;--border:#2a2e3d;--text:#e4e6ed;--dim:#8b8fa3;--accent:#c8a24e;--accent2:#e6b84d;--green:#3ecf8e;--blue:#5b9cf6;--red:#ef6461;--purple:#a78bfa;--orange:#f59e42}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+.container{max-width:1600px;margin:0 auto;padding:24px}
+header{text-align:center;padding:32px 0 24px}
+header h1{font-size:2.2rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.5px}
+header p{color:var(--dim);font-size:.95rem;margin-top:6px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;text-align:center}
+.stat-card .label{font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin-bottom:4px}
+.stat-card .value{font-size:1.8rem;font-weight:700;color:var(--accent2)}
+.stat-card .sub{font-size:.8rem;color:var(--dim);margin-top:2px}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.chart-card h3{font-size:.9rem;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.bar-chart{display:flex;flex-direction:column;gap:8px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{width:120px;font-size:.82rem;color:var(--text);text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:22px;background:var(--bg);border-radius:6px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 8px;font-size:.72rem;font-weight:600;color:#fff;min-width:28px;transition:width .6s ease}
+.bar-count{font-size:.78rem;color:var(--dim);width:32px;text-align:right;flex-shrink:0}
+.filters{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.filters label{font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:var(--dim)}
+.filters select,.filters input{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-size:.85rem;outline:none}
+.filters select:focus,.filters input:focus{border-color:var(--accent)}
+.filters input[type=text]{min-width:220px}
+.filter-group{display:flex;flex-direction:column;gap:4px}
+.results-count{font-size:.85rem;color:var(--dim);margin-left:auto;align-self:center}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.82rem;min-width:1400px}
+thead{background:var(--card2);position:sticky;top:0;z-index:2}
+th{padding:12px 14px;text-align:left;font-weight:600;color:var(--dim);text-transform:uppercase;font-size:.72rem;letter-spacing:.5px;cursor:pointer;user-select:none;white-space:nowrap;border-bottom:2px solid var(--border)}
+th:hover{color:var(--accent)}
+th .sort-arrow{margin-left:4px;font-size:.65rem}
+td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover td{background:rgba(200,162,78,.04)}
+.brand-name{font-weight:600;color:var(--text);font-size:.88rem}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.7rem;font-weight:600;margin:1px 2px}
+.tag-highland{background:rgba(94,162,91,.15);color:#6fcf6a}
+.tag-lowland{background:rgba(91,156,246,.15);color:var(--blue)}
+.tag-valley{background:rgba(91,156,246,.15);color:var(--blue)}
+.tag-both{background:rgba(167,139,250,.15);color:var(--purple)}
+.tag-independent{background:rgba(62,207,142,.15);color:var(--green)}
+.tag-celebrity{background:rgba(245,158,66,.15);color:var(--orange)}
+.tag-conglomerate{background:rgba(239,100,97,.15);color:var(--red)}
+.tag-family{background:rgba(200,162,78,.15);color:var(--accent2)}
+.tag-premium{background:rgba(200,162,78,.15);color:var(--accent)}
+.tag-ultra{background:rgba(167,139,250,.15);color:var(--purple)}
+.tag-mid{background:rgba(62,207,142,.15);color:var(--green)}
+.tag-value{background:rgba(91,156,246,.15);color:var(--blue)}
+.price{color:var(--green);font-weight:600}
+.rating{color:var(--accent2);font-weight:700}
+.method-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:.68rem;background:rgba(255,255,255,.06);color:var(--dim);margin:1px}
+.nom{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--dim)}
+.differentiator{font-size:.78rem;color:var(--dim);max-width:240px;line-height:1.4}
+footer{text-align:center;padding:32px 0;color:var(--dim);font-size:.78rem}
+@media(max-width:900px){
+  .charts-row{grid-template-columns:1fr}
+  .filters{flex-direction:column}
+  .results-count{margin-left:0}
+  header h1{font-size:1.6rem}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <h1>🥃 Additive-Free Tequila Intelligence</h1>
+  <p>Competitive landscape of verified additive-free tequila brands · Data compiled from Tequila Matchmaker, Additive Free Alliance, and brand disclosures</p>
+</header>
+<div class="stats-row" id="statsRow"></div>
+<div class="charts-row">
+  <div class="chart-card"><h3>Brands by Agave Region</h3><div class="bar-chart" id="regionChart"></div></div>
+  <div class="chart-card"><h3>Brands by Ownership Type</h3><div class="bar-chart" id="ownerChart"></div></div>
+</div>
+<div class="charts-row">
+  <div class="chart-card"><h3>Price Tier Distribution (Blanco)</h3><div class="bar-chart" id="priceChart"></div></div>
+  <div class="chart-card"><h3>Production Method</h3><div class="bar-chart" id="methodChart"></div></div>
+</div>
+<div class="filters" id="filters">
+  <div class="filter-group">
+    <label>Search</label>
+    <input type="text" id="search" placeholder="Brand, company, NOM...">
+  </div>
+  <div class="filter-group">
+    <label>Region</label>
+    <select id="fRegion"><option value="">All</option><option>Highland</option><option>Lowland/Valley</option><option>Both</option></select>
+  </div>
+  <div class="filter-group">
+    <label>Ownership</label>
+    <select id="fOwner"><option value="">All</option><option>Independent/Family</option><option>Celebrity-Backed</option><option>Conglomerate</option></select>
+  </div>
+  <div class="filter-group">
+    <label>Production</label>
+    <select id="fMethod"><option value="">All</option><option>Tahona</option><option>Roller Mill</option><option>Tahona + Roller Mill</option><option>Brick Oven + Roller Mill</option><option>Autoclave</option></select>
+  </div>
+  <div class="filter-group">
+    <label>Price Tier</label>
+    <select id="fTier"><option value="">All</option><option>Value (Under $30)</option><option>Mid-Range ($30-50)</option><option>Premium ($50-80)</option><option>Ultra-Premium ($80+)</option></select>
+  </div>
+  <div class="filter-group">
+    <label>Positioning</label>
+    <select id="fPos"><option value="">All</option><option>Value</option><option>Mid-Range</option><option>Premium</option><option>Ultra-Premium</option><option>Luxury</option></select>
+  </div>
+  <span class="results-count" id="resultsCount"></span>
+</div>
+<div class="table-wrap">
+<table>
+<thead><tr>
+  <th data-col="brand">Brand <span class="sort-arrow"></span></th>
+  <th data-col="company">Parent Co. <span class="sort-arrow"></span></th>
+  <th data-col="ownership">Ownership <span class="sort-arrow"></span></th>
+  <th data-col="nom">NOM <span class="sort-arrow"></span></th>
+  <th data-col="region">Agave Region <span class="sort-arrow"></span></th>
+  <th data-col="method">Production <span class="sort-arrow"></span></th>
+  <th data-col="blanco">Blanco $ <span class="sort-arrow"></span></th>
+  <th data-col="repo">Repo $ <span class="sort-arrow"></span></th>
+  <th data-col="anejo">Añejo $ <span class="sort-arrow"></span></th>
+  <th data-col="xa">XA $ <span class="sort-arrow"></span></th>
+  <th data-col="rating">Rating <span class="sort-arrow"></span></th>
+  <th data-col="dist">Distribution <span class="sort-arrow"></span></th>
+  <th data-col="pos">Positioning <span class="sort-arrow"></span></th>
+  <th data-col="year">Founded <span class="sort-arrow"></span></th>
+  <th data-col="diff">Differentiator</th>
+</tr></thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+<footer>
+  <p>Data sourced from Tequila Matchmaker, Additive Free Alliance, SpiritedAgave, brand sites & retailer pricing · Prices are approximate US retail (750ml) · April 2026</p>
+  <p style="margin-top:4px">Dashboard built for competitive intelligence purposes · Not affiliated with any brand</p>
+</footer>
+</div>
+
+<script>
+const DATA=[
+{brand:"Fortaleza",company:"Tequila Los Abuelos",ownership:"Independent/Family",nom:"1493",region:"Lowland/Valley",method:"Tahona",blanco:45,repo:58,anejo:72,xa:null,rating:92,dist:"US Nationwide",pos:"Premium",year:1999,diff:"5th-gen Sauza descendant; tahona-crushed; brick oven; copper pot stills; cult following"},
+{brand:"G4",company:"El Pandillo",ownership:"Independent/Family",nom:"1579",region:"Highland",method:"Tahona + Roller Mill",blanco:42,repo:52,anejo:65,xa:110,rating:93,dist:"US Nationwide",pos:"Premium",year:2008,diff:"Felipe Camarena 4th-gen; custom 'Felipestein' tahona; rainwater blend; estate agave"},
+{brand:"Tequila Ocho",company:"La Alteña (Carlos Camarena)",ownership:"Independent/Family",nom:"1474",region:"Highland",method:"Roller Mill",blanco:45,repo:55,anejo:70,xa:null,rating:91,dist:"US Nationwide",pos:"Premium",year:2008,diff:"Single-estate vintages; terroir-focused; co-created w/ late Tomas Estes"},
+{brand:"El Tesoro",company:"Beam Suntory",ownership:"Conglomerate",nom:"1139",region:"Highland",method:"Tahona",blanco:40,repo:50,anejo:60,xa:100,rating:90,dist:"US Nationwide",pos:"Premium",year:1937,diff:"Carlos Camarena master distiller; traditional tahona at La Alteña; deep heritage"},
+{brand:"Tapatio",company:"La Alteña",ownership:"Independent/Family",nom:"1139",region:"Highland",method:"Tahona",blanco:35,repo:42,anejo:55,xa:85,rating:91,dist:"US Regional",pos:"Mid-Range",year:1937,diff:"Same distillery as El Tesoro; better value; authentic highland terroir; 110 proof Blanco available"},
+{brand:"Siete Leguas",company:"Casa Siete Leguas",ownership:"Independent/Family",nom:"1120",region:"Highland",method:"Tahona + Roller Mill",blanco:42,repo:50,anejo:65,xa:null,rating:90,dist:"US Nationwide",pos:"Premium",year:1952,diff:"Once produced Jose Cuervo Tradicional; legendary artisanal producer; open-air fermentation"},
+{brand:"Cascahuín",company:"Tequila Cascahuín",ownership:"Independent/Family",nom:"1123",region:"Lowland/Valley",method:"Tahona + Roller Mill",blanco:38,repo:45,anejo:55,xa:null,rating:89,dist:"US Regional",pos:"Mid-Range",year:1904,diff:"Rosales family 4th-gen; El Arenal origin; multiple extraction methods blended"},
+{brand:"Pasote",company:"Tequila Don Roberto",ownership:"Independent/Family",nom:"1584",region:"Highland",method:"Roller Mill",blanco:42,repo:50,anejo:62,xa:null,rating:90,dist:"US Nationwide",pos:"Premium",year:2015,diff:"Felipe Camarena consults; brick oven; copper pot; 'passion' branding; clean profile"},
+{brand:"El Tequileño",company:"Tequila San José del Refugio",ownership:"Independent/Family",nom:"1108",region:"Lowland/Valley",method:"Roller Mill",blanco:32,repo:38,anejo:50,xa:70,rating:88,dist:"US Nationwide",pos:"Mid-Range",year:1959,diff:"Rare lowland gran reserva repo; family-owned; traditional brick ovens; 75+ years heritage"},
+{brand:"Terralta",company:"El Pandillo (Felipe Camarena)",ownership:"Independent/Family",nom:"1579",region:"Highland",method:"Tahona + Roller Mill",blanco:40,repo:48,anejo:65,xa:120,rating:91,dist:"US Regional",pos:"Premium",year:2012,diff:"Same distillery as G4; high-proof expressions popular; 110 proof blanco"},
+{brand:"Wild Common",company:"Cascahuín (NatGeo partnership)",ownership:"Independent/Family",nom:"1123",region:"Lowland/Valley",method:"Tahona + Roller Mill",blanco:55,repo:65,anejo:80,xa:null,rating:91,dist:"US Regional",pos:"Premium",year:2020,diff:"NatGeo photographer Andy Bardon; still-strength bottling; Cascahuín produced"},
+{brand:"Siembra Valles",company:"Tequila Cascahuín",ownership:"Independent/Family",nom:"1123",region:"Lowland/Valley",method:"Tahona + Roller Mill",blanco:40,repo:48,anejo:60,xa:null,rating:89,dist:"US Regional",pos:"Premium",year:2005,diff:"David Suro's passion project; ancestral valley agave; cultural preservation mission"},
+{brand:"Don Fulano",company:"Tequilera Corralejo (Pernod Ricard dist.)",ownership:"Independent/Family",nom:"1146",region:"Highland",method:"Roller Mill",blanco:40,repo:52,anejo:65,xa:95,rating:90,dist:"US Nationwide",pos:"Premium",year:1996,diff:"Estate-grown agave; stainless rest 60 days for blanco; French oak for añejo"},
+{brand:"Tears of Llorona",company:"German González",ownership:"Independent/Family",nom:"1146",region:"Highland",method:"Roller Mill",blanco:null,repo:null,anejo:null,xa:280,rating:96,dist:"US Limited",pos:"Luxury",year:2008,diff:"XA only; 5yr aged; 3 cask types; highest-rated tequila at 2025 World Spirits Championships"},
+{brand:"Fuenteseca",company:"Enrique Fonseca",ownership:"Independent/Family",nom:"1146",region:"Highland",method:"Roller Mill",blanco:70,repo:85,anejo:120,xa:250,rating:94,dist:"US Limited",pos:"Ultra-Premium",year:1993,diff:"Single-vintage cosechas; extended aged expressions (7-21yr); collector's items"},
+{brand:"Patrón",company:"Bacardi",ownership:"Conglomerate",nom:"1492",region:"Highland",method:"Tahona + Roller Mill",blanco:38,repo:45,anejo:52,xa:90,rating:82,dist:"Global",pos:"Premium",year:1989,diff:"CRT-certified additive-free (2024); massive scale; 50/50 tahona-roller blend; mainstream recognition"},
+{brand:"Lalo",company:"Atozano Spirits",ownership:"Independent/Family",nom:"1468",region:"Highland",method:"Tahona",blanco:45,repo:null,anejo:null,xa:null,rating:87,dist:"US Nationwide",pos:"Premium",year:2020,diff:"Blanco-only brand; grandson of Don Julio; tahona-crushed; clean modern positioning"},
+{brand:"Mijenta",company:"Mijenta Tequila Co.",ownership:"Independent/Family",nom:"1412",region:"Highland",method:"Roller Mill",blanco:40,repo:65,anejo:80,xa:null,rating:88,dist:"US Nationwide",pos:"Premium",year:2020,diff:"Ana María Romero master blender; B-Corp certified; sustainability focus; women-led"},
+{brand:"Código 1530",company:"Código Tequila",ownership:"Celebrity-Backed",nom:"1616",region:"Lowland/Valley",method:"Brick Oven + Roller Mill",blanco:38,repo:48,anejo:60,xa:200,rating:85,dist:"US Nationwide",pos:"Premium",year:2016,diff:"George Strait invested; Cognac barrel Rosa; premium packaging; crossover appeal"},
+{brand:"Volans",company:"El Pandillo (Felipe Camarena)",ownership:"Independent/Family",nom:"1579",region:"Highland",method:"Tahona + Roller Mill",blanco:48,repo:58,anejo:70,xa:null,rating:90,dist:"US Regional",pos:"Premium",year:2018,diff:"Same Camarena distillery as G4; higher proof; named after crane (Volans)"},
+{brand:"ArteNOM",company:"Multiple distilleries",ownership:"Independent/Family",nom:"Various",region:"Both",method:"Tahona + Roller Mill",blanco:48,repo:55,anejo:65,xa:null,rating:90,dist:"US Nationwide",pos:"Premium",year:2013,diff:"Selección series from different NOMs (1123,1146,1414,1579); terroir showcase"},
+{brand:"Cimarron",company:"Destiladora González González",ownership:"Independent/Family",nom:"1146",region:"Highland",method:"Roller Mill",blanco:22,repo:26,anejo:32,xa:null,rating:84,dist:"US Nationwide",pos:"Value",year:2014,diff:"Best value additive-free; bar workhorse; liter bottles; incredible price-to-quality"},
+{brand:"Alma del Jaguar",company:"Vivanco family",ownership:"Independent/Family",nom:"1414",region:"Highland",method:"Brick Oven + Roller Mill",blanco:45,repo:55,anejo:70,xa:null,rating:88,dist:"US Regional",pos:"Premium",year:2019,diff:"Small-batch; estate agave; 7yr old agave minimum; women master distiller"},
+{brand:"Dulce Vida",company:"Dulce Vida Spirits",ownership:"Independent/Family",nom:"1443",region:"Highland",method:"Brick Oven + Roller Mill",blanco:28,repo:32,anejo:38,xa:null,rating:83,dist:"US Nationwide",pos:"Mid-Range",year:2009,diff:"USDA organic certified; 100 proof expressions; good value; widely available"},
+{brand:"La Gritona",company:"Melly Barajas",ownership:"Independent/Family",nom:"1533",region:"Lowland/Valley",method:"Roller Mill",blanco:null,repo:28,anejo:null,xa:null,rating:86,dist:"US Nationwide",pos:"Value",year:2016,diff:"Repo only; women-owned; hand-blown recycled glass bottles; outstanding value"},
+{brand:"Partida",company:"Partida Tequila",ownership:"Independent/Family",nom:"1502",region:"Highland",method:"Autoclave",blanco:38,repo:45,anejo:55,xa:null,rating:85,dist:"US Nationwide",pos:"Premium",year:2002,diff:"Single-estate; Gary Shansby founder; autoclave + stainless; clean modern style"},
+{brand:"Cazcanes",company:"Cazcanes No.9",ownership:"Independent/Family",nom:"1599",region:"Highland",method:"Brick Oven + Roller Mill",blanco:50,repo:58,anejo:68,xa:null,rating:89,dist:"US Regional",pos:"Premium",year:2019,diff:"9yr old agave; high-proof expressions; still-strength options; craft positioning"},
+{brand:"Tequila Corrido",company:"Corrido Spirits",ownership:"Independent/Family",nom:"1412",region:"Highland",method:"Roller Mill",blanco:38,repo:45,anejo:55,xa:null,rating:87,dist:"US Regional",pos:"Mid-Range",year:2020,diff:"50% ABV blanco; recently switched distilleries with improved quality; bartender favorite"},
+{brand:"Arette",company:"Tequila El Llano",ownership:"Independent/Family",nom:"1109",region:"Highland",method:"Roller Mill",blanco:22,repo:25,anejo:30,xa:50,rating:85,dist:"US Nationwide",pos:"Value",year:1986,diff:"Named after Olympic horse; incredible value; bartender staple; consistent quality"},
+{brand:"Don Fulano",company:"Tequila Fuenteseca",ownership:"Independent/Family",nom:"1146",region:"Highland",method:"Roller Mill",blanco:40,repo:52,anejo:65,xa:95,rating:90,dist:"US Nationwide",pos:"Premium",year:1996,diff:"Enrique Fonseca produced; estate Highland agave; French & American oak aging"},
+{brand:"Azuñia",company:"Azuñia Tequila",ownership:"Independent/Family",nom:"1426",region:"Highland",method:"Brick Oven + Roller Mill",blanco:30,repo:35,anejo:45,xa:null,rating:84,dist:"US Nationwide",pos:"Mid-Range",year:2009,diff:"USDA organic; Black Label premium line; sustainable farming practices"},
+{brand:"Siempre",company:"Siempre Tequila",ownership:"Independent/Family",nom:"1137",region:"Both",method:"Roller Mill",blanco:30,repo:35,anejo:45,xa:null,rating:84,dist:"US Nationwide",pos:"Mid-Range",year:2016,diff:"Día de los Muertos branding; skull bottle; appeals to younger demo; good value"},
+{brand:"Chamucos",company:"Tequilera Amatitán",ownership:"Independent/Family",nom:"1586",region:"Lowland/Valley",method:"Roller Mill",blanco:35,repo:42,anejo:55,xa:68,rating:87,dist:"US Regional",pos:"Mid-Range",year:2004,diff:"Diablo branding; traditional lowland production; copper pot stills; unique character"},
+{brand:"Suerte",company:"Tequila Suerte",ownership:"Independent/Family",nom:"1530",region:"Highland",method:"Tahona",blanco:40,repo:48,anejo:58,xa:null,rating:88,dist:"US Regional",pos:"Premium",year:2013,diff:"100% tahona; estate agave; 'Luck' branding; small-batch artisanal"},
+{brand:"Flecha Azul",company:"Flecha Azul Spirits",ownership:"Celebrity-Backed",nom:"1110",region:"Highland",method:"Brick Oven + Roller Mill",blanco:35,repo:40,anejo:50,xa:null,rating:82,dist:"US Nationwide",pos:"Mid-Range",year:2020,diff:"Mark Wahlberg & Abraham Ancer; additive-free; accessible price; mainstream marketing"},
+{brand:"Tres Agaves",company:"Trinchero Family",ownership:"Conglomerate",nom:"1614",region:"Highland",method:"Brick Oven + Roller Mill",blanco:25,repo:28,anejo:35,xa:null,rating:82,dist:"US Nationwide",pos:"Value",year:2005,diff:"Organic; value play; cocktail-focused; widely distributed; Trinchero wine family"},
+{brand:"Volcan de Mi Tierra",company:"LVMH (Moët Hennessy)",ownership:"Conglomerate",nom:"1523",region:"Both",method:"Roller Mill",blanco:42,repo:50,anejo:65,xa:null,rating:84,dist:"US Nationwide",pos:"Premium",year:2017,diff:"LVMH luxury house; volcanic terroir from Tequila volcano; blends highland+lowland"},
+{brand:"De Nada",company:"De Nada Tequila",ownership:"Independent/Family",nom:"1414",region:"Highland",method:"Brick Oven + Roller Mill",blanco:35,repo:42,anejo:55,xa:null,rating:86,dist:"US Regional",pos:"Mid-Range",year:2019,diff:"Women co-founded; small batch; agave-forward; growing cult following"},
+{brand:"Lagrimas del Valle",company:"Cascahuín",ownership:"Independent/Family",nom:"1123",region:"Lowland/Valley",method:"Tahona + Roller Mill",blanco:55,repo:65,anejo:80,xa:null,rating:91,dist:"US Limited",pos:"Ultra-Premium",year:2019,diff:"Plata bottled at still strength; El Sabino spring water; unique packaging"},
+{brand:"Alquimia",company:"Tequila Alquimia",ownership:"Independent/Family",nom:"1468",region:"Highland",method:"Tahona",blanco:50,repo:58,anejo:72,xa:100,rating:87,dist:"US Regional",pos:"Premium",year:2004,diff:"USDA organic; tahona-crushed; limited production; alchemy theme"},
+{brand:"t1 Tequila Uno",company:"Germán González",ownership:"Independent/Family",nom:"1146",region:"Highland",method:"Roller Mill",blanco:42,repo:55,anejo:70,xa:null,rating:89,dist:"US Regional",pos:"Premium",year:2009,diff:"Select expressions aged in different barrels; exceptional blanco; artisanal"},
+{brand:"Primo 1861",company:"El Pandillo",ownership:"Independent/Family",nom:"1579",region:"Highland",method:"Tahona + Roller Mill",blanco:48,repo:55,anejo:68,xa:null,rating:89,dist:"US Regional",pos:"Premium",year:2018,diff:"Camarena family heritage; 1861 founding date reference; high proof expressions"},
+{brand:"Campo Bravo",company:"Campari Group",ownership:"Conglomerate",nom:"1566",region:"Highland",method:"Autoclave",blanco:20,repo:24,anejo:30,xa:null,rating:78,dist:"US Nationwide",pos:"Value",year:2021,diff:"Campari-owned; value positioning; additive-free at lowest price tier; volume play"},
+{brand:"Chinaco",company:"Tequila Chinaco",ownership:"Independent/Family",nom:"1127",region:"Highland",method:"Brick Oven + Roller Mill",blanco:42,repo:50,anejo:62,xa:null,rating:87,dist:"US Regional",pos:"Premium",year:1983,diff:"First US premium tequila; Tamaulipas origin (unique); pioneer of premium category"},
+{brand:"Cambio",company:"Cambio Tequila",ownership:"Independent/Family",nom:"1605",region:"Highland",method:"Brick Oven + Roller Mill",blanco:35,repo:42,anejo:55,xa:null,rating:85,dist:"US Regional",pos:"Mid-Range",year:2020,diff:"Sustainability mission; TMM certified; modern branding; craft approach"}
+];
+
+// Remove duplicate Don Fulano (keep first)
+const seen=new Set();const brands=DATA.filter(d=>{if(seen.has(d.brand))return false;seen.add(d.brand);return true});
+
+let sortCol='brand',sortDir=1;
+
+function render(){
+  const s=document.getElementById('search').value.toLowerCase();
+  const fR=document.getElementById('fRegion').value;
+  const fO=document.getElementById('fOwner').value;
+  const fM=document.getElementById('fMethod').value;
+  const fT=document.getElementById('fTier').value;
+  const fP=document.getElementById('fPos').value;
+
+  let filtered=brands.filter(d=>{
+    if(s&&!`${d.brand} ${d.company} ${d.nom} ${d.diff}`.toLowerCase().includes(s))return false;
+    if(fR&&d.region!==fR)return false;
+    if(fO&&d.ownership!==fO)return false;
+    if(fM&&!d.method.includes(fM.split(' + ')[0]))return false;
+    if(fT){
+      const b=d.blanco||d.repo||0;
+      if(fT.includes('Under $30')&&b>=30)return false;
+      if(fT.includes('$30-50')&&(b<30||b>50))return false;
+      if(fT.includes('$50-80')&&(b<50||b>80))return false;
+      if(fT.includes('$80+')&&b<80)return false;
+    }
+    if(fP&&d.pos!==fP)return false;
+    return true;
+  });
+
+  filtered.sort((a,b)=>{
+    let va=a[sortCol],vb=b[sortCol];
+    if(va==null)va=sortDir===1?Infinity:-Infinity;
+    if(vb==null)vb=sortDir===1?Infinity:-Infinity;
+    if(typeof va==='string')return va.localeCompare(vb)*sortDir;
+    return (va-vb)*sortDir;
+  });
+
+  document.getElementById('resultsCount').textContent=`${filtered.length} of ${brands.length} brands`;
+
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML=filtered.map(d=>`<tr>
+    <td class="brand-name">${d.brand}</td>
+    <td>${d.company}</td>
+    <td><span class="tag tag-${d.ownership.includes('Family')?'family':d.ownership.includes('Celebrity')?'celebrity':'conglomerate'}">${d.ownership}</span></td>
+    <td class="nom">${d.nom}</td>
+    <td><span class="tag tag-${d.region.includes('Highland')?'highland':d.region.includes('Both')?'both':'valley'}">${d.region}</span></td>
+    <td>${d.method.split(' + ').map(m=>`<span class="method-tag">${m.trim()}</span>`).join(' ')}</td>
+    <td class="price">${d.blanco?'$'+d.blanco:'—'}</td>
+    <td class="price">${d.repo?'$'+d.repo:'—'}</td>
+    <td class="price">${d.anejo?'$'+d.anejo:'—'}</td>
+    <td class="price">${d.xa?'$'+d.xa:'—'}</td>
+    <td class="rating">${d.rating||'—'}</td>
+    <td>${d.dist}</td>
+    <td><span class="tag tag-${d.pos==='Ultra-Premium'||d.pos==='Luxury'?'ultra':d.pos==='Premium'?'premium':d.pos==='Mid-Range'?'mid':'value'}">${d.pos}</span></td>
+    <td>${d.year||'—'}</td>
+    <td class="differentiator">${d.diff}</td>
+  </tr>`).join('');
+}
+
+function renderStats(){
+  const blancos=brands.filter(d=>d.blanco).map(d=>d.blanco);
+  const avgB=blancos.length?Math.round(blancos.reduce((a,b)=>a+b,0)/blancos.length):0;
+  const regions={};brands.forEach(d=>regions[d.region]=(regions[d.region]||0)+1);
+  const owners={};brands.forEach(d=>owners[d.ownership]=(owners[d.ownership]||0)+1);
+  const positions={};brands.forEach(d=>positions[d.pos]=(positions[d.pos]||0)+1);
+
+  document.getElementById('statsRow').innerHTML=`
+    <div class="stat-card"><div class="label">Total Brands</div><div class="value">${brands.length}</div><div class="sub">Verified additive-free</div></div>
+    <div class="stat-card"><div class="label">Avg Blanco Price</div><div class="value">$${avgB}</div><div class="sub">750ml US retail</div></div>
+    <div class="stat-card"><div class="label">Independent/Family</div><div class="value">${owners['Independent/Family']||0}</div><div class="sub">${Math.round((owners['Independent/Family']||0)/brands.length*100)}% of total</div></div>
+    <div class="stat-card"><div class="label">Highland Brands</div><div class="value">${regions['Highland']||0}</div><div class="sub">vs ${regions['Lowland/Valley']||0} lowland</div></div>
+    <div class="stat-card"><div class="label">Price Range</div><div class="value">$20–$280</div><div class="sub">Blanco to XA</div></div>
+    <div class="stat-card"><div class="label">Unique NOMs</div><div class="value">${new Set(brands.map(d=>d.nom)).size}</div><div class="sub">Distilleries represented</div></div>
+  `;
+}
+
+function renderCharts(){
+  const colors=['var(--accent)','var(--blue)','var(--green)','var(--purple)','var(--orange)','var(--red)'];
+  function barChart(id,data){
+    const max=Math.max(...data.map(d=>d[1]));
+    document.getElementById(id).innerHTML=data.map((d,i)=>`
+      <div class="bar-row">
+        <span class="bar-label">${d[0]}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${d[1]/max*100}%;background:${colors[i%colors.length]}">${d[1]}</div></div>
+      </div>`).join('');
+  }
+  const rc={};brands.forEach(d=>rc[d.region]=(rc[d.region]||0)+1);
+  barChart('regionChart',Object.entries(rc).sort((a,b)=>b[1]-a[1]));
+
+  const oc={};brands.forEach(d=>oc[d.ownership]=(oc[d.ownership]||0)+1);
+  barChart('ownerChart',Object.entries(oc).sort((a,b)=>b[1]-a[1]));
+
+  const tiers=[['Under $30',0],['$30–$50',0],['$50–$80',0],['$80+',0]];
+  brands.forEach(d=>{const p=d.blanco||d.repo||0;if(p<30)tiers[0][1]++;else if(p<=50)tiers[1][1]++;else if(p<=80)tiers[2][1]++;else tiers[3][1]++});
+  barChart('priceChart',tiers);
+
+  const mc={};brands.forEach(d=>mc[d.method]=(mc[d.method]||0)+1);
+  barChart('methodChart',Object.entries(mc).sort((a,b)=>b[1]-a[1]));
+}
+
+document.querySelectorAll('th[data-col]').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const col=th.dataset.col;
+    if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1}
+    document.querySelectorAll('.sort-arrow').forEach(s=>s.textContent='');
+    th.querySelector('.sort-arrow').textContent=sortDir===1?' ▲':' ▼';
+    render();
+  });
+});
+
+['search','fRegion','fOwner','fMethod','fTier','fPos'].forEach(id=>{
+  document.getElementById(id).addEventListener(id==='search'?'input':'change',render);
+});
+
+renderStats();renderCharts();render();
+</script>
+</body>
+</html>
