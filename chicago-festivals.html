@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chicago Music Festivals — Summer 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --card: #141414;
+    --card-hover: #1a1a1a;
+    --border: #222;
+    --text: #e8e8e8;
+    --muted: #888;
+    --accent: #3b82f6;
+    --free: #10b981;
+    --paid: #f59e0b;
+    --past: #555;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .hero {
+    text-align: center;
+    padding: 60px 20px 40px;
+    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #fff 0%, #3b82f6 50%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .hero .subtitle {
+    font-size: 1.1rem;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .hero .skyline {
+    font-size: 2rem;
+    margin-top: 12px;
+  }
+
+  .filters {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 30px 20px 60px;
+  }
+
+  .month-header {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin: 40px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .month-header:first-of-type { margin-top: 0; }
+
+  .festival-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+    cursor: default;
+  }
+
+  .festival-card:hover {
+    background: var(--card-hover);
+    border-color: #333;
+    transform: translateY(-1px);
+  }
+
+  .festival-card.past {
+    opacity: 0.45;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .festival-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  .badge {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .badge.free { background: rgba(16,185,129,0.15); color: var(--free); }
+  .badge.paid { background: rgba(245,158,11,0.15); color: var(--paid); }
+  .badge.genre { background: rgba(59,130,246,0.1); color: var(--accent); border: 1px solid rgba(59,130,246,0.2); }
+
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+  .card-details {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 6px;
+  }
+
+  .detail {
+    font-size: 0.88rem;
+    color: var(--muted);
+  }
+
+  .detail strong { color: var(--text); font-weight: 600; }
+
+  .headliners {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #aaa;
+    line-height: 1.5;
+  }
+
+  .headliners strong { color: var(--text); }
+
+  .card-link {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 0.82rem;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .card-link:hover { text-decoration: underline; }
+
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    padding: 20px;
+    margin-top: -10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--accent);
+  }
+
+  .stat-label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    .card-details { grid-template-columns: 1fr; }
+    .stats { gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🎵 Chicago Music Festivals</h1>
+  <p class="subtitle">Your complete guide to Summer 2026</p>
+  <div class="skyline">🏙️</div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num">20+</div><div class="stat-label">Festivals</div></div>
+  <div class="stat"><div class="stat-num">10</div><div class="stat-label">Free Events</div></div>
+  <div class="stat"><div class="stat-num">May–Sep</div><div class="stat-label">Season</div></div>
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="free">🆓 Free</button>
+  <button class="filter-btn" data-filter="paid">🎟️ Paid</button>
+  <button class="filter-btn" data-filter="rock">🎸 Rock/Alt</button>
+  <button class="filter-btn" data-filter="electronic">🎧 Electronic</button>
+  <button class="filter-btn" data-filter="blues-jazz">🎷 Blues/Jazz</button>
+  <button class="filter-btn" data-filter="country">🤠 Country</button>
+  <button class="filter-btn" data-filter="latin">💃 Latin</button>
+  <button class="filter-btn" data-filter="multi">🎪 Multi-Genre</button>
+</div>
+
+<div class="container" id="festivals">
+
+  <!-- MAY -->
+  <div class="month-header">📅 May</div>
+
+  <div class="festival-card past" data-genre="multi" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Belmont-Sheffield Music Fest</span>
+      <div class="badges"><span class="badge free">Free</span><span class="badge genre">Multi-Genre</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>May 22–24</strong></div>
+      <div class="detail">📍 Belmont & Sheffield, Lakeview</div>
+    </div>
+    <div class="headliners">Neighborhood street fest kicking off the season with local and regional bands across multiple stages.</div>
+    <a class="card-link" href="https://www.chicagoevents.com/events/belmont-sheffield-music-fest" target="_blank">More Info →</a>
+  </div>
+
+  <div class="festival-card past" data-genre="latin" data-cost="paid">
+    <div class="card-top">
+      <span class="festival-name">Sueños Music Festival</span>
+      <div class="badges"><span class="badge paid">Paid</span><span class="badge genre">Latin / Reggaeton</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>May 23–24</strong></div>
+      <div class="detail">📍 Grant Park</div>
+    </div>
+    <div class="headliners"><strong>Headliners:</strong> J Balvin, Kali Uchis, Fuerza Regida · 40+ artists, 3 stages</div>
+    <a class="card-link" href="https://www.suenosfest.com/" target="_blank">Tickets & Info →</a>
+  </div>
+
+  <div class="festival-card past" data-genre="multi" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Do Division Street Fest</span>
+      <div class="badges"><span class="badge free">Free</span><span class="badge genre">Indie / Multi</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>May 29–31</strong></div>
+      <div class="detail">📍 Division St, West Town</div>
+    </div>
+    <div class="headliners">One of the most popular early-season street fests. Live music, food vendors, local artists. A strong entry point into festival season.</div>
+    <a class="card-link" href="https://do312.com/dodivision" target="_blank">More Info →</a>
+  </div>
+
+  <!-- JUNE -->
+  <div class="month-header">📅 June</div>
+
+  <div class="festival-card" data-genre="blues-jazz" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Chicago Blues Festival</span>
+      <div class="badges"><span class="badge free">Free</span><span class="badge genre">Blues</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>June 4–7</strong></div>
+      <div class="detail">📍 Millennium Park & Ramova Theatre</div>
+    </div>
+    <div class="headliners">The <strong>world's largest free blues festival</strong>. Running since 1984, drawing ~500,000 across 4 days. A Chicago institution.</div>
+    <a class="card-link" href="https://www.chicago.gov/city/en/depts/dca/supp_info/chicago_blues_702702702.html" target="_blank">More Info →</a>
+  </div>
+
+  <div class="festival-card" data-genre="multi" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Ribfest Chicago</span>
+      <div class="badges"><span class="badge free">Free</span><span class="badge genre">Multi-Genre</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>June 5–7</strong></div>
+      <div class="detail">📍 North Center</div>
+    </div>
+    <div class="headliners">Live music + championship BBQ. Local and touring bands on multiple stages in one of Chicago's best neighborhoods.</div>
+  </div>
+
+  <div class="festival-card" data-genre="multi" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Grant Park Music Festival</span>
+      <div class="badges"><span class="badge free">Free</span><span class="badge genre">Classical / Orchestral</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>June 10 – August 15</strong></div>
+      <div class="detail">📍 Jay Pritzker Pavilion, Millennium Park</div>
+    </div>
+    <div class="headliners"><strong>90+ years running.</strong> World-class free classical performances all summer. One of Chicago's best-kept secrets.</div>
+    <a class="card-link" href="https://www.grantparkmusicfestival.com/" target="_blank">Schedule →</a>
+  </div>
+
+  <div class="festival-card" data-genre="multi" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Millennium Park Summer Music Series</span>
+      <div class="badges"><span class="badge free">Free</span><span class="badge genre">Multi-Genre</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>June 15 – August 6</strong> (Mon & Thu)</div>
+      <div class="detail">📍 Jay Pritzker Pavilion</div>
+    </div>
+    <div class="headliners">9 concerts throughout the summer — Monday and Thursday evenings outdoors. Free, chill, consistently well-curated.</div>
+  </div>
+
+  <!-- JULY -->
+  <div class="month-header">📅 July</div>
+
+  <div class="festival-card" data-genre="multi" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Taste of Chicago</span>
+      <div class="badges"><span class="badge free">Free Entry</span><span class="badge genre">Food + Music</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>July 8–12</strong></div>
+      <div class="detail">📍 Grant Park</div>
+    </div>
+    <div class="headliners"><strong>46th annual edition — back in July!</strong> The city's legendary food festival with live music stages. Free entry, pay for food/drinks.</div>
+    <a class="card-link" href="https://www.chicago.gov/city/en/depts/dca/supp_info/taste_702702702.html" target="_blank">More Info →</a>
+  </div>
+
+  <div class="festival-card" data-genre="country" data-cost="paid">
+    <div class="card-top">
+      <span class="festival-name">Windy City Smokeout</span>
+      <div class="badges"><span class="badge paid">Paid</span><span class="badge genre">Country</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>July 8–12</strong> (5 days — expanded!)</div>
+      <div class="detail">📍 United Center Parking Lot</div>
+    </div>
+    <div class="headliners"><strong>Country music + championship BBQ.</strong> Added a 5th day for 2026. Runs simultaneously with Taste of Chicago — hit both!</div>
+    <a class="card-link" href="https://www.windycitysmokeout.com/" target="_blank">Tickets →</a>
+  </div>
+
+  <div class="festival-card" data-genre="multi" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Square Roots Festival</span>
+      <div class="badges"><span class="badge free">Free</span><span class="badge genre">Multi-Genre</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>July 10–12</strong></div>
+      <div class="detail">📍 Lincoln Square</div>
+    </div>
+    <div class="headliners">Live music, local craft beer, family fun in one of Chicago's most charming neighborhoods.</div>
+  </div>
+
+  <div class="festival-card" data-genre="multi" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Chicago Gospel Music Festival</span>
+      <div class="badges"><span class="badge free">Free</span><span class="badge genre">Gospel</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>July 24–25</strong></div>
+      <div class="detail">📍 Jay Pritzker Pavilion</div>
+    </div>
+    <div class="headliners">One of the most <strong>powerful live music experiences</strong> in the city. Completely free. Performances that stay with you.</div>
+  </div>
+
+  <div class="festival-card" data-genre="multi" data-cost="paid">
+    <div class="card-top">
+      <span class="festival-name">🔥 Lollapalooza 2026</span>
+      <div class="badges"><span class="badge paid">Paid</span><span class="badge genre">Multi-Genre</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>July 30 – August 2</strong> (4 days)</div>
+      <div class="detail">📍 Grant Park</div>
+    </div>
+    <div class="headliners"><strong>Headliners:</strong> Charli XCX · Lorde · The Smashing Pumpkins · John Summit · Tate McRae · Olivia Dean · JENNIE · The xx<br>100+ acts across 9 stages. <strong>4-day passes on WAITLIST.</strong></div>
+    <a class="card-link" href="https://www.lollapalooza.com/" target="_blank">Official Site →</a>
+  </div>
+
+  <!-- AUGUST -->
+  <div class="month-header">📅 August</div>
+
+  <div class="festival-card" data-genre="multi" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Chicago Air & Water Show</span>
+      <div class="badges"><span class="badge free">Free</span><span class="badge genre">Entertainment</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>August 15–16</strong></div>
+      <div class="detail">📍 North Avenue Beach</div>
+    </div>
+    <div class="headliners">Not strictly music, but one of Chicago's biggest summer draws. Live entertainment + the Blue Angels over the lakefront.</div>
+  </div>
+
+  <div class="festival-card" data-genre="electronic" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Chicago House Music Festival</span>
+      <div class="badges"><span class="badge free">Free</span><span class="badge genre">House / Electronic</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>August 27–30</strong> (4 days)</div>
+      <div class="detail">📍 Millennium Park & Cultural Center</div>
+    </div>
+    <div class="headliners">Celebrating the genre <strong>Chicago invented</strong>. 4 days of house music in the city where it all started. Free admission.</div>
+  </div>
+
+  <!-- SEPTEMBER -->
+  <div class="month-header">📅 September</div>
+
+  <div class="festival-card" data-genre="blues-jazz" data-cost="free">
+    <div class="card-top">
+      <span class="festival-name">Chicago Jazz Festival</span>
+      <div class="badges"><span class="badge free">Free</span><span class="badge genre">Jazz</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>September 3–6</strong></div>
+      <div class="detail">📍 Millennium Park</div>
+    </div>
+    <div class="headliners">The perfect send-off to summer. Free world-class jazz in a city with 100+ years of jazz history.</div>
+    <a class="card-link" href="https://www.chicago.gov/city/en/depts/dca/supp_info/chicago_jazz_702702702.html" target="_blank">More Info →</a>
+  </div>
+
+  <div class="festival-card" data-genre="electronic" data-cost="paid">
+    <div class="card-top">
+      <span class="festival-name">ARC Music Festival</span>
+      <div class="badges"><span class="badge paid">Paid</span><span class="badge genre">House / Techno</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>September 4–7</strong></div>
+      <div class="detail">📍 Union Park</div>
+    </div>
+    <div class="headliners">Chicago's premier house and techno festival. Multiple stages, immersive production, international DJs.</div>
+    <a class="card-link" href="https://arcmusicfestival.com/" target="_blank">Tickets →</a>
+  </div>
+
+  <div class="festival-card" data-genre="electronic" data-cost="paid">
+    <div class="card-top">
+      <span class="festival-name">North Coast Music Festival</span>
+      <div class="badges"><span class="badge paid">Paid</span><span class="badge genre">EDM / Electronic</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>September 4–6</strong></div>
+      <div class="detail">📍 SeatGeek Stadium, Bridgeview</div>
+    </div>
+    <div class="headliners">"Summer's Last Stand" — Chicago's biggest EDM festival. House, techno, bass, trance. Art installations + immersive stages.</div>
+    <a class="card-link" href="https://northcoastfestival.com/" target="_blank">Tickets →</a>
+  </div>
+
+  <div class="festival-card" data-genre="rock" data-cost="paid">
+    <div class="card-top">
+      <span class="festival-name">🔥 Riot Fest 2026</span>
+      <div class="badges"><span class="badge paid">Paid</span><span class="badge genre">Punk / Rock / Alt</span></div>
+    </div>
+    <div class="card-details">
+      <div class="detail">📆 <strong>September (TBA — likely 18–20)</strong></div>
+      <div class="detail">📍 Douglass Park</div>
+    </div>
+    <div class="headliners"><strong>Lineup TBA.</strong> Punk, rock, alternative, emo. Famous for full-album plays by iconic bands + carnival rides. Presale tickets on sale now.</div>
+    <a class="card-link" href="https://riotfest.org/" target="_blank">Official Site →</a>
+  </div>
+
+</div>
+
+<div class="footer">
+  Built by Hank 🤙 for Jim Hamman · Data sourced from choosechicago.com, chicago.gov, chicagomusicguide.com · Last updated May 2026
+  <br><br>
+  <strong>Note:</strong> Pitchfork Music Festival is <em>not returning in 2025 or 2026</em>.
+</div>
+
+<script>
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    document.querySelectorAll('.festival-card').forEach(card => {
+      if (filter === 'all') {
+        card.style.display = '';
+      } else if (filter === 'free' || filter === 'paid') {
+        card.style.display = card.dataset.cost === filter ? '' : 'none';
+      } else {
+        card.style.display = card.dataset.genre === filter ? '' : 'none';
+      }
+    });
+  });
+});
+</script>
+
+</body>
+</html>
